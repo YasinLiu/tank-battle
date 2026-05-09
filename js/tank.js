@@ -29,38 +29,46 @@ class Tank {
 
   move(direction, gameMap, tanks) {
     this.direction = direction;
-    let newX = this.x;
-    let newY = this.y;
     const moveSpeed = this.speed;
 
+    let dx = 0, dy = 0;
     switch (direction) {
-      case Direction.UP: newY -= moveSpeed; break;
-      case Direction.DOWN: newY += moveSpeed; break;
-      case Direction.LEFT: newX -= moveSpeed; break;
-      case Direction.RIGHT: newX += moveSpeed; break;
+      case Direction.UP: dy = -moveSpeed; break;
+      case Direction.DOWN: dy = moveSpeed; break;
+      case Direction.LEFT: dx = -moveSpeed; break;
+      case Direction.RIGHT: dx = moveSpeed; break;
     }
 
-    // Boundary check
-    newX = clamp(newX, 0, CANVAS_WIDTH - this.width);
-    newY = clamp(newY, 0, CANVAS_HEIGHT - this.height);
-
-    // Tile collision check
-    const checkCorners = (x, y) => {
-      const corners = [
-        { r: Math.floor(y / TILE_SIZE), c: Math.floor(x / TILE_SIZE) },
-        { r: Math.floor(y / TILE_SIZE), c: Math.floor((x + this.width - 1) / TILE_SIZE) },
-        { r: Math.floor((y + this.height - 1) / TILE_SIZE), c: Math.floor(x / TILE_SIZE) },
-        { r: Math.floor((y + this.height - 1) / TILE_SIZE), c: Math.floor((x + this.width - 1) / TILE_SIZE) }
-      ];
-      return corners.every(c => gameMap.isWalkable(c.r, c.c));
+    const checkTileCollision = (x, y) => {
+      const leftCol = Math.floor(x / TILE_SIZE);
+      const rightCol = Math.floor((x + this.width - 1) / TILE_SIZE);
+      const topRow = Math.floor(y / TILE_SIZE);
+      const bottomRow = Math.floor((y + this.height - 1) / TILE_SIZE);
+      for (let r = topRow; r <= bottomRow; r++) {
+        for (let c = leftCol; c <= rightCol; c++) {
+          if (!gameMap.isWalkable(r, c)) return true;
+        }
+      }
+      return false;
     };
 
-    if (checkCorners(newX, newY)) {
-      // Check collision with other tanks
-      const newRect = { x: newX, y: newY, w: this.width, h: this.height };
-      const collidesWithTank = tanks.some(t => t !== this && t.alive && rectCollision(newRect, t.getRect()));
-      if (!collidesWithTank) {
+    const checkTankCollision = (x, y) => {
+      const rect = { x, y, w: this.width, h: this.height };
+      return tanks.some(t => t !== this && t.alive && rectCollision(rect, t.getRect()));
+    };
+
+    // Try to move on X axis
+    if (dx !== 0) {
+      let newX = clamp(this.x + dx, 0, CANVAS_WIDTH - this.width);
+      if (!checkTileCollision(newX, this.y) && !checkTankCollision(newX, this.y)) {
         this.x = newX;
+      }
+    }
+
+    // Try to move on Y axis
+    if (dy !== 0) {
+      let newY = clamp(this.y + dy, 0, CANVAS_HEIGHT - this.height);
+      if (!checkTileCollision(this.x, newY) && !checkTankCollision(this.x, newY)) {
         this.y = newY;
       }
     }

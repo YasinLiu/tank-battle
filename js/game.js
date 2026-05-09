@@ -77,9 +77,9 @@ class Game {
     this.enemiesPerLevel = Math.min(6 + this.level * 2, 20);
     this.maxEnemiesOnScreen = Math.min(3 + this.level, 6);
 
-    // Spawn player
+    // Spawn player at bottom center, aligned to grid
     this.player = new Tank(
-      (COLS / 2 - 2) * TILE_SIZE,
+      Math.floor(COLS / 2) * TILE_SIZE,
       (ROWS - 2) * TILE_SIZE,
       '#27ae60',
       true

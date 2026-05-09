@@ -36,8 +36,15 @@ class GameMap {
     const density = Math.min(0.15 + level * 0.02, 0.3);
     for (let r = 1; r < ROWS - 3; r++) {
       for (let c = 0; c < COLS; c++) {
-        // Keep spawn areas clear
+        // Keep enemy spawn areas clear (top row)
         if (r <= 2 && (c <= 2 || c >= COLS - 3 || (c >= Math.floor(COLS / 2) - 2 && c <= Math.floor(COLS / 2) + 1))) continue;
+
+        // Keep player spawn area clear (bottom center + 3 tiles radius)
+        const playerSpawnCol = Math.floor(COLS / 2);
+        const playerSpawnRow = ROWS - 2;
+        const dx = c - playerSpawnCol;
+        const dy = r - playerSpawnRow;
+        if (Math.abs(dx) <= 3 && Math.abs(dy) <= 3) continue;
 
         if (Math.random() < density) {
           const type = Math.random() < 0.7 ? TileType.BRICK : TileType.STEEL;
