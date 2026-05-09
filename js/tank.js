@@ -6,7 +6,7 @@ class Tank {
     this.height = TILE_SIZE - 4;
     this.color = color;
     this.direction = Direction.UP;
-    this.speed = 2;
+    this.speed = 3;
     this.isPlayer = isPlayer;
     this.alive = true;
     this.hp = isPlayer ? 3 : 1;
@@ -46,12 +46,11 @@ class Tank {
 
     // Tile collision check
     const checkCorners = (x, y) => {
-      const margin = 2;
       const corners = [
-        { r: Math.floor((y + margin) / TILE_SIZE), c: Math.floor((x + margin) / TILE_SIZE) },
-        { r: Math.floor((y + margin) / TILE_SIZE), c: Math.floor((x + this.width - margin) / TILE_SIZE) },
-        { r: Math.floor((y + this.height - margin) / TILE_SIZE), c: Math.floor((x + margin) / TILE_SIZE) },
-        { r: Math.floor((y + this.height - margin) / TILE_SIZE), c: Math.floor((x + this.width - margin) / TILE_SIZE) }
+        { r: Math.floor(y / TILE_SIZE), c: Math.floor(x / TILE_SIZE) },
+        { r: Math.floor(y / TILE_SIZE), c: Math.floor((x + this.width - 1) / TILE_SIZE) },
+        { r: Math.floor((y + this.height - 1) / TILE_SIZE), c: Math.floor(x / TILE_SIZE) },
+        { r: Math.floor((y + this.height - 1) / TILE_SIZE), c: Math.floor((x + this.width - 1) / TILE_SIZE) }
       ];
       return corners.every(c => gameMap.isWalkable(c.r, c.c));
     };

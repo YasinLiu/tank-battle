@@ -21,8 +21,8 @@ class GameMap {
     this.grid[ROWS - 2][baseCol] = TileType.BASE;
     this.grid[ROWS - 2][baseCol + 1] = TileType.BASE;
 
-    // Protect base with bricks
-    for (let c = baseCol - 1; c <= baseCol + 2; c++) {
+    // Protect base with bricks (leave sides open for player movement)
+    for (let c = baseCol; c <= baseCol + 1; c++) {
       if (c >= 0 && c < COLS) {
         this.grid[ROWS - 3][c] = TileType.BRICK;
       }
