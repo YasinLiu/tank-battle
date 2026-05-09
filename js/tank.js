@@ -1,214 +1,177 @@
 class Tank {
-  constructor(x, y, color, isPlayer = false) {
+  constructor(x, y, color, isPlayer) {
     this.x = x;
     this.y = y;
-    this.width = TILE_SIZE - 4;
-    this.height = TILE_SIZE - 4;
+    this.w = TILE - 4;
+    this.h = TILE - 4;
     this.color = color;
-    this.direction = Direction.UP;
-    this.speed = 3;
+    this.dir = DIR.U;
+    this.speed = isPlayer ? 3 : 1.5;
     this.isPlayer = isPlayer;
     this.alive = true;
     this.hp = isPlayer ? 3 : 1;
-    this.shootCooldown = 0;
-    this.shootDelay = isPlayer ? 15 : 60;
-    this.invincible = 0;
-    this.animFrame = 0;
-    this.animTimer = 0;
+    this.cooldown = 0;
+    this.maxCooldown = isPlayer ? 12 : 60;
+    this.inv = isPlayer ? 90 : 0;
   }
 
-  update(gameMap) {
-    if (this.shootCooldown > 0) this.shootCooldown--;
-    if (this.invincible > 0) this.invincible--;
-    this.animTimer++;
-    if (this.animTimer >= 10) {
-      this.animFrame = (this.animFrame + 1) % 2;
-      this.animTimer = 0;
+  update() {
+    if (this.cooldown > 0) this.cooldown--;
+    if (this.inv > 0) this.inv--;
+  }
+
+  canMoveTo(nx, ny, map, tanks) {
+    // Boundary check
+    if (nx < 0 || ny < 0 || nx + this.w > W || ny + this.h > H) return false;
+
+    // Tile collision: check all 4 corners with 1px inset
+    const m = 1;
+    const corners = [
+      [Math.floor((ny + m) / TILE), Math.floor((nx + m) / TILE)],
+      [Math.floor((ny + m) / TILE), Math.floor((nx + this.w - 1 - m) / TILE)],
+      [Math.floor((ny + this.h - 1 - m) / TILE), Math.floor((nx + m) / TILE)],
+      [Math.floor((ny + this.h - 1 - m) / TILE), Math.floor((nx + this.w - 1 - m) / TILE)]
+    ];
+    for (const [r, c] of corners) {
+      if (!map.isWalkable(r, c)) return false;
     }
+
+    // Tank collision
+    const rect = { x: nx, y: ny, w: this.w, h: this.h };
+    for (const t of tanks) {
+      if (t === this || !t.alive) continue;
+      if (overlap(rect, t.getRect())) return false;
+    }
+    return true;
   }
 
-  move(direction, gameMap, tanks) {
-    this.direction = direction;
-    const moveSpeed = this.speed;
-
+  move(dir, map, tanks) {
+    this.dir = dir;
     let dx = 0, dy = 0;
-    switch (direction) {
-      case Direction.UP: dy = -moveSpeed; break;
-      case Direction.DOWN: dy = moveSpeed; break;
-      case Direction.LEFT: dx = -moveSpeed; break;
-      case Direction.RIGHT: dx = moveSpeed; break;
-    }
+    if (dir === DIR.U) dy = -this.speed;
+    else if (dir === DIR.D) dy = this.speed;
+    else if (dir === DIR.L) dx = -this.speed;
+    else if (dir === DIR.R) dx = this.speed;
 
-    const checkTileCollision = (x, y) => {
-      const leftCol = Math.floor(x / TILE_SIZE);
-      const rightCol = Math.floor((x + this.width - 1) / TILE_SIZE);
-      const topRow = Math.floor(y / TILE_SIZE);
-      const bottomRow = Math.floor((y + this.height - 1) / TILE_SIZE);
-      for (let r = topRow; r <= bottomRow; r++) {
-        for (let c = leftCol; c <= rightCol; c++) {
-          if (!gameMap.isWalkable(r, c)) return true;
-        }
-      }
-      return false;
-    };
-
-    const checkTankCollision = (x, y) => {
-      const rect = { x, y, w: this.width, h: this.height };
-      return tanks.some(t => t !== this && t.alive && rectCollision(rect, t.getRect()));
-    };
-
-    // Try to move on X axis
+    // Move X first, then Y (allows wall sliding)
     if (dx !== 0) {
-      let newX = clamp(this.x + dx, 0, CANVAS_WIDTH - this.width);
-      if (!checkTileCollision(newX, this.y) && !checkTankCollision(newX, this.y)) {
-        this.x = newX;
-      }
+      const nx = clamp(this.x + dx, 0, W - this.w);
+      if (this.canMoveTo(nx, this.y, map, tanks)) this.x = nx;
     }
-
-    // Try to move on Y axis
     if (dy !== 0) {
-      let newY = clamp(this.y + dy, 0, CANVAS_HEIGHT - this.height);
-      if (!checkTileCollision(this.x, newY) && !checkTankCollision(this.x, newY)) {
-        this.y = newY;
-      }
+      const ny = clamp(this.y + dy, 0, H - this.h);
+      if (this.canMoveTo(this.x, ny, map, tanks)) this.y = ny;
     }
   }
 
   shoot() {
-    if (this.shootCooldown > 0) return null;
-    this.shootCooldown = this.shootDelay;
-
-    let bulletX = this.x + this.width / 2;
-    let bulletY = this.y + this.height / 2;
-
-    switch (this.direction) {
-      case Direction.UP: bulletY -= this.height / 2; break;
-      case Direction.DOWN: bulletY += this.height / 2; break;
-      case Direction.LEFT: bulletX -= this.width / 2; break;
-      case Direction.RIGHT: bulletX += this.width / 2; break;
-    }
-
-    const bulletSpeed = this.isPlayer ? 5 : 4;
-    return new Bullet(bulletX, bulletY, this.direction, bulletSpeed, this.isPlayer ? 'player' : 'enemy');
+    if (this.cooldown > 0) return null;
+    this.cooldown = this.maxCooldown;
+    const bx = this.x + this.w / 2;
+    const by = this.y + this.h / 2;
+    let bdx = 0, bdy = 0;
+    if (this.dir === DIR.U) bdy = -1;
+    else if (this.dir === DIR.D) bdy = 1;
+    else if (this.dir === DIR.L) bdx = -1;
+    else if (this.dir === DIR.R) bdx = 1;
+    return new Bullet(bx, by, bdx, bdy, this.isPlayer);
   }
 
-  takeDamage() {
-    if (this.invincible > 0) return false;
+  hit() {
+    if (this.inv > 0) return false;
     this.hp--;
-    if (this.hp <= 0) {
-      this.alive = false;
-      return true;
-    }
-    if (this.isPlayer) {
-      this.invincible = 120; // 2 seconds invincibility
-    }
+    if (this.hp <= 0) { this.alive = false; return true; }
+    if (this.isPlayer) this.inv = 90;
     return false;
   }
 
-  getRect() {
-    return { x: this.x, y: this.y, w: this.width, h: this.height };
-  }
+  getRect() { return { x: this.x, y: this.y, w: this.w, h: this.h }; }
 
   draw(ctx) {
     if (!this.alive) return;
-
-    const cx = this.x + this.width / 2;
-    const cy = this.y + this.height / 2;
+    const cx = this.x + this.w / 2, cy = this.y + this.h / 2;
+    const flick = this.inv > 0 && Math.floor(Date.now() / 100) % 2;
 
     ctx.save();
     ctx.translate(cx, cy);
-    ctx.rotate((this.direction * Math.PI) / 2);
+    ctx.rotate(this.dir * Math.PI / 2);
 
-    // Tank body
-    const flicker = this.invincible > 0 && this.animFrame === 0;
-    ctx.fillStyle = flicker ? '#ffffff' : this.color;
+    // Body
+    ctx.fillStyle = flick ? '#fff' : this.color;
+    ctx.fillRect(-this.w / 2, -this.h / 2, this.w, this.h);
 
-    // Main body
-    drawRoundedRect(ctx, -this.width / 2, -this.height / 2, this.width, this.height, 3);
-    ctx.fill();
-
-    // Track lines
-    ctx.fillStyle = flicker ? '#cccccc' : this.darken(this.color, 30);
-    ctx.fillRect(-this.width / 2, -this.height / 2, 6, this.height);
-    ctx.fillRect(this.width / 2 - 6, -this.height / 2, 6, this.height);
+    // Tracks
+    ctx.fillStyle = flick ? '#ddd' : darken(this.color, 40);
+    ctx.fillRect(-this.w / 2, -this.h / 2, 5, this.h);
+    ctx.fillRect(this.w / 2 - 5, -this.h / 2, 5, this.h);
 
     // Turret
-    ctx.fillStyle = flicker ? '#eeeeee' : this.lighten(this.color, 30);
-    ctx.beginPath();
-    ctx.arc(0, 0, this.width / 4, 0, Math.PI * 2);
-    ctx.fill();
+    ctx.fillStyle = flick ? '#eee' : lighten(this.color, 30);
+    ctx.beginPath(); ctx.arc(0, 0, this.w / 4, 0, Math.PI * 2); ctx.fill();
 
     // Barrel
-    ctx.fillStyle = flicker ? '#dddddd' : this.darken(this.color, 15);
-    ctx.fillRect(-3, -this.height / 2 - 6, 6, this.height / 2 + 6);
+    ctx.fillStyle = flick ? '#ccc' : darken(this.color, 20);
+    ctx.fillRect(-2.5, -this.h / 2 - 5, 5, this.h / 2 + 5);
 
     ctx.restore();
 
     // HP bar for player
-    if (this.isPlayer) {
-      const barWidth = this.width;
-      const barHeight = 4;
-      const barY = this.y - 8;
+    if (this.isPlayer && this.hp < 3) {
       ctx.fillStyle = '#333';
-      ctx.fillRect(this.x, barY, barWidth, barHeight);
+      ctx.fillRect(this.x, this.y - 8, this.w, 4);
       ctx.fillStyle = '#0f0';
-      ctx.fillRect(this.x, barY, barWidth * (this.hp / 3), barHeight);
+      ctx.fillRect(this.x, this.y - 8, this.w * (this.hp / 3), 4);
     }
-  }
-
-  darken(hex, amount) {
-    const num = parseInt(hex.slice(1), 16);
-    const r = Math.max(0, (num >> 16) - amount);
-    const g = Math.max(0, ((num >> 8) & 0xff) - amount);
-    const b = Math.max(0, (num & 0xff) - amount);
-    return `rgb(${r},${g},${b})`;
-  }
-
-  lighten(hex, amount) {
-    const num = parseInt(hex.slice(1), 16);
-    const r = Math.min(255, (num >> 16) + amount);
-    const g = Math.min(255, ((num >> 8) & 0xff) + amount);
-    const b = Math.min(255, (num & 0xff) + amount);
-    return `rgb(${r},${g},${b})`;
   }
 }
 
 class EnemyTank extends Tank {
   constructor(x, y) {
     const colors = ['#c0392b', '#e67e22', '#8e44ad', '#2980b9'];
-    super(x, y, colors[randomInt(0, colors.length - 1)], false);
+    super(x, y, colors[rand(0, colors.length - 1)], false);
     this.moveTimer = 0;
-    this.moveInterval = randomInt(30, 90);
-    this.currentDir = Direction.DOWN;
-    this.shootDelay = randomInt(40, 80);
+    this.moveInterval = rand(40, 100);
+    this.curDir = DIR.D;
+    this.shootTimer = rand(30, 80);
   }
 
-  aiUpdate(gameMap, player, tanks) {
+  ai(map, player, tanks) {
     this.moveTimer++;
     if (this.moveTimer >= this.moveInterval) {
       this.moveTimer = 0;
-      this.moveInterval = randomInt(30, 90);
-
-      // Decide direction: sometimes aim towards player
-      if (Math.random() < 0.4 && player.alive) {
-        const dx = player.x - this.x;
-        const dy = player.y - this.y;
-        if (Math.abs(dx) > Math.abs(dy)) {
-          this.currentDir = dx > 0 ? Direction.RIGHT : Direction.LEFT;
-        } else {
-          this.currentDir = dy > 0 ? Direction.DOWN : Direction.UP;
-        }
+      this.moveInterval = rand(40, 100);
+      if (Math.random() < 0.35 && player.alive) {
+        const dx = player.x - this.x, dy = player.y - this.y;
+        this.curDir = Math.abs(dx) > Math.abs(dy)
+          ? (dx > 0 ? DIR.R : DIR.L)
+          : (dy > 0 ? DIR.D : DIR.U);
       } else {
-        this.currentDir = randomInt(0, 3);
+        this.curDir = rand(0, 3);
       }
     }
+    this.move(this.curDir, map, tanks);
 
-    this.move(this.currentDir, gameMap, tanks);
-
-    // Shoot randomly or when facing player
-    if (Math.random() < 0.02) {
+    this.shootTimer--;
+    if (this.shootTimer <= 0) {
+      this.shootTimer = rand(30, 80);
       return this.shoot();
     }
     return null;
   }
+}
+
+// Helpers
+function darken(hex, n) {
+  const v = parseInt(hex.slice(1), 16);
+  const r = Math.max(0, (v >> 16) - n);
+  const g = Math.max(0, ((v >> 8) & 0xff) - n);
+  const b = Math.max(0, (v & 0xff) - n);
+  return `rgb(${r},${g},${b})`;
+}
+function lighten(hex, n) {
+  const v = parseInt(hex.slice(1), 16);
+  const r = Math.min(255, (v >> 16) + n);
+  const g = Math.min(255, ((v >> 8) & 0xff) + n);
+  const b = Math.min(255, (v & 0xff) + n);
+  return `rgb(${r},${g},${b})`;
 }
