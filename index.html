@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tank Battle - 坦克大战</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-wrapper">
+    <div id="hud" class="hidden">
+      <span>SCORE: <b id="score">0</b></span>
+      <span>LIVES: <b id="lives">3</b></span>
+      <span>LEVEL: <b id="level">1</b></span>
+      <span>ENEMIES: <b id="enemies">0</b></span>
+    </div>
+
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="menu" class="overlay">
+      <h1>TANK BATTLE</h1>
+      <p>坦克大战</p>
+      <div class="controls-info">
+        <p><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> or <kbd>Arrow Keys</kbd> Move</p>
+        <p><kbd>Space</kbd> Shoot</p>
+      </div>
+      <button id="startBtn" class="btn">START GAME</button>
+    </div>
+
+    <div id="gameOver" class="overlay hidden">
+      <h2>GAME OVER</h2>
+      <div class="score-display">
+        Score: <span id="finalScore">0</span>
+      </div>
+      <p>Level reached: <span id="finalLevel">1</span></p>
+      <div class="btn-group">
+        <button id="restartBtn" class="btn">RESTART</button>
+        <button id="menuBtn" class="btn btn-secondary">MENU</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/utils.js"></script>
+  <script src="js/map.js"></script>
+  <script src="js/bullet.js"></script>
+  <script src="js/tank.js"></script>
+  <script src="js/game.js"></script>
+</body>
+</html>

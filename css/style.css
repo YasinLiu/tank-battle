@@ -1,0 +1,150 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  background: #0a0a1a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  font-family: 'Courier New', monospace;
+  overflow: hidden;
+}
+
+#game-wrapper {
+  position: relative;
+}
+
+canvas {
+  display: block;
+  border: 3px solid #444;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.2);
+}
+
+#hud {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-around;
+  color: #0f0;
+  font-size: 14px;
+  text-shadow: 0 0 5px #0f0;
+}
+
+#hud span {
+  background: rgba(0, 0, 0, 0.7);
+  padding: 5px 12px;
+  border: 1px solid #0f0;
+  border-radius: 4px;
+}
+
+.hidden {
+  display: none !important;
+}
+
+.overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  color: #fff;
+}
+
+.overlay h1 {
+  font-size: 48px;
+  color: #0f0;
+  text-shadow: 0 0 20px #0f0;
+  margin-bottom: 10px;
+}
+
+.overlay h2 {
+  font-size: 36px;
+  color: #f00;
+  text-shadow: 0 0 15px #f00;
+  margin-bottom: 20px;
+}
+
+.overlay p {
+  font-size: 16px;
+  color: #aaa;
+  margin: 5px 0;
+}
+
+.overlay .score-display {
+  font-size: 24px;
+  color: #ffd700;
+  margin: 15px 0;
+}
+
+.controls-info {
+  margin: 20px 0;
+  text-align: center;
+  color: #888;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.controls-info kbd {
+  background: #333;
+  border: 1px solid #555;
+  border-radius: 3px;
+  padding: 2px 8px;
+  color: #fff;
+  font-size: 12px;
+}
+
+.btn {
+  background: #0f0;
+  color: #000;
+  border: none;
+  padding: 12px 40px;
+  font-size: 18px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: 15px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  background: #0a0;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5);
+  transform: scale(1.05);
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #0f0;
+  border: 2px solid #0f0;
+}
+
+.btn-secondary:hover {
+  background: rgba(0, 255, 0, 0.1);
+}
+
+.btn-group {
+  display: flex;
+  gap: 15px;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.blink {
+  animation: blink 1s infinite;
+}
